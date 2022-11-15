@@ -1,0 +1,18 @@
+
+* Introduction
+
+`org-agenda-conflict` allows to mark conflicting items in the org
+agenda. Conflicting items are items with an overlap between their
+start and end date.  The marking assumed that items are sorted and
+only checks for conflicts between two consecutive lines. It can
+probably be extended to check for conflicts between all items but this
+would slow down marking.
+
+** Example Usage
+
+#+begin_src emacs-lisp
+
+(add-hook 'org-agenda-finalize-hook
+          '(lambda () (org-agenda-conflict-mark 'error)))
+
+#+end_src
