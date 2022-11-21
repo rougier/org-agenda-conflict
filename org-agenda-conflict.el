@@ -27,6 +27,9 @@
 
 ;; This code mark conflicting items in the org agenda. Conflicting
 ;; items are items with an overlap between their start and end date.
+;; The marking assumes that items are sorted and only checks for
+;; conflicts between adjacent lines. It can proably be extended
+;; to check for conflicts between all items but this would slow things.
 ;;
 ;;; Usage:
 
@@ -38,7 +41,7 @@
 
 (defun org-agenda-conflict--get-item ()
   "Get date range for an agenda item unless tagged CANCELLED."
-  
+
   (when-let* ((date (get-text-property (point) 'date))
               (tags (or (get-text-property (point) 'tags) '()))
               (time-of-day (get-text-property (point) 'time-of-day))
@@ -69,9 +72,9 @@
 
 
 (defun org-agenda-conflict-mark (face)
-  "Mark items whose schedule conflct with face FACE.
+  "Mark items whose schedule conflict with face FACE.
 Tags are not marked."
-  
+
   (goto-char (point-min))
   (while (not (eobp))
     (let ((inhibit-read-only t)
