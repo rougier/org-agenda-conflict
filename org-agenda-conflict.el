@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/org-agenda-conflict
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: org org-agenda
 
@@ -27,9 +27,6 @@
 
 ;; This code mark conflicting items in the org agenda. Conflicting
 ;; items are items with an overlap between their start and end date.
-;; The marking assumed that items are sorted and only check for
-;; conflicts between two consecutive lines. It can proably be extended
-;; to check for conflicts between all items but this would slow things.
 ;;
 ;;; Usage:
 
@@ -70,6 +67,7 @@
            (and (time-less-p end-2 end-1)   ;; Event 2 end is inside event 1 range
                 (time-less-p beg-1 end-2))))))
 
+
 (defun org-agenda-conflict-mark (face)
   "Mark items whose schedule conflct with face FACE.
 Tags are not marked."
@@ -77,20 +75,32 @@ Tags are not marked."
   (goto-char (point-min))
   (while (not (eobp))
     (let ((inhibit-read-only t)
+          (point-1 (point))
+          (date-1 (get-text-property (point) 'date))
           (item-1 (org-agenda-conflict--get-item))
-          (item-2 (save-excursion (forward-line)
-                                  (org-agenda-conflict--get-item))))
-      (when (org-agenda-conflict--check item-1 item-2)
-        (save-excursion
-          (beginning-of-line)
-          (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
-            (add-text-properties (match-beginning 1) (match-end 1)
-                                 `(face ,face)))
-          (forward-line)
-          (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
-            (add-text-properties (match-beginning 1) (match-end 1)
-                                 `(face ,face))))))
-    (forward-line 1)))
+          (next-day nil))
+      (save-excursion
+        (forward-line)
+        (while (and (not next-day) (not (eobp)))
+          (let ((point-2 (point))
+                (date-2 (get-text-property (point) 'date))
+                (item-2 (org-agenda-conflict--get-item)))
+            (when (org-agenda-conflict--check item-1 item-2)
+              (save-excursion
+                (goto-char point-1)
+                (beginning-of-line)
+                (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
+                  (add-text-properties (match-beginning 1) (match-end 1)
+                                       `(face ,face)))
+                (goto-char point-2)
+                (beginning-of-line)
+                (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
+                  (add-text-properties (match-beginning 1) (match-end 1)
+                                       `(face ,face)))))
+            (when (not (eq date-1 date-2))
+              (setq next-day t)))
+          (forward-line))))
+    (forward-line)))
 
 
 (provide 'org-agenda-conflict)
