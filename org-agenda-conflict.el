@@ -25,11 +25,8 @@
 
 ;;; Commentary:
 
-;; This code mark conflicting items in the org agenda. Conflicting
+;; This code marks conflicting items in the org agenda. Conflicting
 ;; items are items with an overlap between their start and end date.
-;; The marking assumes that items are sorted and only checks for
-;; conflicts between adjacent lines. It can proably be extended
-;; to check for conflicts between all items but this would slow things.
 ;;
 ;;; Usage:
 
