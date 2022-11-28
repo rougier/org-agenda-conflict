@@ -57,7 +57,8 @@
         (cons start end)))))
 
 (defun org-agenda-conflict--check (item-1 item-2)
-  "Check if two agenda items conflict based on their respective schedule."
+  "Check if two agenda items ITEM-1 and ITEM-2 conflict.
+Conflicts are determined based on their respective schedule."
 
   (when (and item-1 item-2)
     (let ((beg-1 (car item-1))
