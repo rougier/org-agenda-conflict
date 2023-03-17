@@ -42,33 +42,44 @@
 The data range is a cons of the start and end date timestamp."
 
   (when-let* ((date (get-text-property (point) 'date))
-              (tags (or (get-text-property (point) 'tags) '()))
               ;; For e.g. 11:30, time-of-day is "1130"
               (time-of-day (get-text-property (point) 'time-of-day))
               (duration (get-text-property (point) 'duration)))
-    (when (not (member "CANCELLED" tags))
-      (let* ((day (nth 1 date))
-             (month (nth 0 date))
-             (year (nth 2 date))
-             (hour (/ time-of-day 100))
-             (minutes (- time-of-day (* hour 100)))
-             (start (encode-time 0 minutes hour day month year))
-             (end (encode-time 0 (+ minutes (floor duration)) hour day month year)))
-        (cons start end)))))
+    (let ((tags (or (get-text-property (point) 'tags) '())))
+      (when (not (member "CANCELLED" tags))
+        (let* ((day (nth 1 date))
+               (month (nth 0 date))
+               (year (nth 2 date))
+               (hour (/ time-of-day 100))
+               (minutes (- time-of-day (* hour 100)))
+               (start (encode-time 0 minutes hour day month year))
+               (end (encode-time 0 (+ minutes (floor duration)) hour day month year)))
+          (cons start end))))))
 
 (defun org-agenda-conflict--check (item-1 item-2)
   "Check if date ranges ITEM-1 and ITEM-2 overlap."
 
   (when (and item-1 item-2)
-    (let ((beg-1 (car item-1))
-          (end-1 (cdr item-1))
-          (beg-2 (car item-2))
-          (end-2 (cdr item-2)))
-      (or  (time-equal-p beg-1 beg-2)       ;; Events start at the same time
-           (and (time-less-p beg-1 beg-2)   ;; Event 2 beg is inside event 1 range
-                (time-less-p beg-2 end-1))
-           (and (time-less-p end-2 end-1)   ;; Event 2 end is inside event 1 range
-                (time-less-p beg-1 end-2))))))
+    (let* ((beg-1 (car item-1))
+           (end-1 (cdr item-1))
+           (beg-2 (car item-2))
+           (end-2 (cdr item-2))
+           (conflict (cond ((time-equal-p beg-1 beg-2)      t)
+                           ((time-equal-p end-1 beg-2)    nil)
+                           ((time-equal-p end-2 beg-1)    nil)
+                           ((and (time-less-p beg-1 beg-2)
+                                 (time-less-p beg-2 end-1)) t)
+                           ((and (time-less-p end-2 end-1) 
+                                 (time-less-p beg-1 end-2)) t))))
+      ;; Debug
+      ;; (message "%s:%s to %s:%s - %s:%s to %s:%s = %s "
+      ;;          (nth 2 (decode-time beg-1)) (nth 1 (decode-time beg-1))
+      ;;          (nth 2 (decode-time end-1)) (nth 1 (decode-time end-1))
+      ;;          (nth 2 (decode-time beg-2)) (nth 1 (decode-time beg-2))
+      ;;          (nth 2 (decode-time end-2)) (nth 1 (decode-time end-2))
+      ;;          conflict)
+      conflict)))
+      
 
 
 (defun org-agenda-conflict-mark (face)
@@ -92,12 +103,12 @@ Tags are not marked."
               (save-excursion
                 (goto-char point-1)
                 (beginning-of-line)
-                (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
+                (when (search-forward-regexp "^ *\\(.+? \\)[ ]*:*.*" nil t)
                   (add-text-properties (match-beginning 1) (match-end 1)
                                        `(face ,face)))
                 (goto-char point-2)
                 (beginning-of-line)
-                (when (search-forward-regexp "^ \\(.+? \\)[ ]+:.*" nil t)
+                (when (search-forward-regexp "^ *\\(.+? \\)[ ]*:*.*" nil t)
                   (add-text-properties (match-beginning 1) (match-end 1)
                                        `(face ,face)))))
             (when (not (eq date-1 date-2))
